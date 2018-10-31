@@ -28,7 +28,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        boolean debug = true;
+        boolean debug = false;
 
         BasicConfigurator.configure();
 
@@ -112,7 +112,7 @@ public class Main {
             }
 
             /** Training */
-/*
+
             int epochs = 1000;
             double gamma = 0.9;
             double epsilon = 1;
@@ -162,7 +162,7 @@ public class Main {
 
             }
             
-*/
+
         } catch (ExceptionInInitializerError e) {
             System.out.println(e.getCause());
         }
