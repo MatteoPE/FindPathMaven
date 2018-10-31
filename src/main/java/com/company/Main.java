@@ -28,7 +28,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        boolean debug = false;
+        boolean debug = true;
 
         BasicConfigurator.configure();
 
@@ -106,12 +106,13 @@ public class Main {
             NN.init();
 
             if(debug) {
-                INDArray input = Nd4j.rand(1,4);
+                INDArray input = Nd4j.rand(1,48);
                 INDArray output = NN.output(input);
+                System.out.println(output);
             }
 
             /** Training */
-
+/*
             int epochs = 1000;
             double gamma = 0.9;
             double epsilon = 1;
@@ -161,7 +162,7 @@ public class Main {
 
             }
             
-
+*/
         } catch (ExceptionInInitializerError e) {
             System.out.println(e.getCause());
         }
