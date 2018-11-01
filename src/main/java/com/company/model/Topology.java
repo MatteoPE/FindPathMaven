@@ -5,6 +5,7 @@ import com.company.routing.BFSConstant;
 import com.company.util.EuclDist;
 
 import java.util.*;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 public class Topology implements BFSConstant {
@@ -27,6 +28,10 @@ public class Topology implements BFSConstant {
             return new Position(x,y);
         }).collect(Collectors.toSet());
 
+    }
+
+    public int[] getSwitchedOffIDs() {
+        return switchedOffNodes.stream().map(Node::getId).mapToInt(x -> x).toArray();
     }
 
     /** my functions end */

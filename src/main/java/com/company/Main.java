@@ -155,7 +155,7 @@ public class Main {
                         newQ.putScalar(node, -1000.0);
                     }
                     double maxQ = Nd4j.getExecutioner().execAndReturn(new Max(newQ)).getFinalResult().doubleValue();
-
+                    
 
                 }
 
