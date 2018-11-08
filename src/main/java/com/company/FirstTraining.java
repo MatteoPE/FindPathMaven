@@ -1,8 +1,8 @@
 package com.company;
 
 import com.company.deeplearning.ActionValue;
-import com.company.newgame.NewState;
 import com.company.model.Topology;
+import com.company.newgame.NewState;
 import com.company.util.PrinterHelper;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -14,17 +14,14 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-public class NewMain{
+public class FirstTraining {
 
     public static void main(String [] args) {
 
@@ -48,15 +45,16 @@ public class NewMain{
         /** Neural Network Configuration */
 
         int nInput = s.getNumID()*3;
-        int nLayer1 = 164;
-        int nLayer2 = 150;
+        int nLayer1 = 4*s.getNumID();
+        int nLayer2 = 2*s.getNumID();
         int nOutput = s.getNumID();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .weightInit(WeightInit.XAVIER)
-                .l2(0.1)
-                .updater(Updater.RMSPROP)
+                //.l2(0.1)
+
+                .updater(new RmsProp())
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nInput).nOut(nLayer1)
@@ -67,7 +65,7 @@ public class NewMain{
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU)
                         .build())
-                .layer(2, new OutputLayer.Builder().nIn(nLayer2).nOut(nOutput)
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(nLayer2).nOut(nOutput)
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.IDENTITY)
                         .build())
@@ -79,7 +77,7 @@ public class NewMain{
 
         /** Training */
 
-        int epochs = 1000;
+        int epochs = 2000;
         double gamma = 0.9;
         double epsilon = 1;
 
@@ -97,36 +95,7 @@ public class NewMain{
                 //find adjacent nodes
                 Set<Integer> adjacent = t.getNeighborsID(currentPlayerID);
                 ActionValue currentAV = new ActionValue(adjacent, qval);
-                /**
-                Integer[] adjacentArray = adjacent.toArray(new Integer[0]);
-                int finalCurrentPlayerID = currentPlayerID;
-                int[] nonAdjacent = IntStream.range(0, nOutput)
-                        .filter(x->{
-                            return !adjacent.contains(x);
-                        })
-                        .toArray();
-                // make non adjacent nodes unavailable
-                for (Integer node: nonAdjacent) {
-                    qval.putScalar(node, -1000.0);
-                }
-                qval.putScalar(currentPlayerID, -1000.0);
-                */
-                /**
-                // take an action
-                if(rand.nextDouble() < epsilon) {
-                    //choose random action
-                    if(adjacentArray.length > 0) {
-                        int randomSize = rand.nextInt(adjacentArray.length);
-                        action = adjacentArray[randomSize];
-                    } else {
-                        action = currentPlayerID;
-                        status = false;
-                    }
-                } else {
-                    //choose best action from Q(s,a) values
-                    action =  Nd4j.getExecutioner().execAndReturn(new IMax(qval)).getFinalResult();
-                }
-                 */
+
                 if(rand.nextDouble() < epsilon) {
                     //choose random action
                     action = currentAV.randomAction(rand);
@@ -147,22 +116,7 @@ public class NewMain{
                 INDArray newQ = NN.output(newState.getINDArray().reshape(1,nInput));
                 Set<Integer> newAdjacent = t.getNeighborsID(newPlayerID);
                 ActionValue newAV = new ActionValue(newAdjacent, newQ);
-                /**
-                // make non adjacent nodes unavailable
-                int[] newNonAdjacent = IntStream.range(0, nOutput)
-                        .filter(x->{
-                            return !newAdjacent.contains(x);
-                        })
-                        .toArray();
 
-                for (Integer node: newNonAdjacent) {
-                    newQ.putScalar(node, -1000.0);
-                }
-                newQ.putScalar(newPlayerID,-1000.0);
-                */
-                /**
-                double maxQ = Nd4j.getExecutioner().execAndReturn(new Max(newQ)).getFinalResult().doubleValue();
-                */
                 double maxQ = newAV.bestQValue();
                 INDArray y = Nd4j.zeros(1,nOutput);
                 y.putRow(0, qval.getRow(0));
@@ -172,8 +126,8 @@ public class NewMain{
                 } else { // non-terminal state
                     update = reward + gamma*maxQ;
                 }
-                y.putScalar(action, reward); // target output
-                System.out.println("Game #" + i);
+                y.putScalar(action, update); // target output
+
                 NN.fit(currentState.getINDArray(),y);
                 currentState = newState;
                 currentPlayerID = newPlayerID;
@@ -185,6 +139,8 @@ public class NewMain{
                 }
 
             }
+            if(i%100 == 0)
+                System.out.println("Game #" + i);
 
         }
 
@@ -206,22 +162,7 @@ public class NewMain{
             //find adjacent nodes
             Set<Integer> adjacent = t.getNeighborsID(testPlayerID);
             ActionValue testAV = new ActionValue(adjacent, qval);
-            /**
-            int finalTestPlayerID = testPlayerID;
-            int[] nonAdjacent = IntStream.range(0, nOutput)
-                    .filter(x->{
-                        return !adjacent.contains(x);
-                    })
-                    .toArray();
-            // make non adjacent nodes unavailable
-            for (Integer node: nonAdjacent) {
-                qval.putScalar(node, -1000.0);
-            }
-            qval.putScalar(testPlayerID,-1000.0);
-            */
-            /**
-            action =  Nd4j.getExecutioner().execAndReturn(new IMax(qval)).getFinalResult();
-            */
+
             action = testAV.bestAction();
             System.out.println("Move #" + i + "; Going to node: " + action);
             testState = new NewState(action, goalID, obstacleIDs, size);

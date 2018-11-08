@@ -51,9 +51,27 @@ public class NewState {
                 return -1;
             }
         }
-        return -1.0/this.numID;
+        return -0.1;
 
 
 
+    }
+
+
+    // 0 -> nothing
+    // 1 -> player
+    // 2 -> goal
+    // 3 -> obstacle
+    public int[][] displayGrid() {
+
+        int[][] grid = new int[this.size][this.size];
+
+        grid[this.playerID / this.size][this.playerID % this.size] = 1;
+        grid[this.goalID / this.size][this.goalID % this.size] = 2;
+        for (int obstacle: this.obstacleIDs) {
+            grid[obstacle / this.size][obstacle % this.size] = 3;
+        }
+
+        return grid;
     }
 }
